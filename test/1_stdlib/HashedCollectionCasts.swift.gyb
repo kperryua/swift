@@ -12,7 +12,7 @@
 // RUN: rm -rf %t
 // RUN: mkdir -p %t
 // RUN: %gyb %s -o %t/HashedCollectionCasts.swift
-// RUN: %line-directive %t/HashedCollectionCasts.swift -- %target-build-swift %t/HashedCollectionCasts.swift -o %t/a.out
+// RUN: %line-directive %t/HashedCollectionCasts.swift -- %target-build-swift -enable-experimental-collection-casts %t/HashedCollectionCasts.swift -o %t/a.out
 // RUN: %line-directive %t/HashedCollectionCasts.swift -- %target-run %t/a.out
 // REQUIRES: executable_test
 // REQUIRES: objc_interop
@@ -83,7 +83,8 @@ tests.test("Set/Down/${Key1}=>${Key0}") {
     ${DynamicKey}(42) as ${Key1},
     ${DynamicKey}(17) as ${Key1}]
 
-  // FIXME Set<Base> => Set<Derived> fails dynamically
+  // FIXME Set<Base> => Set<Derived> fails dynamically, and never even reaches
+  // one of my runtime entry points.
   guard let downcasted = expectNotEmpty(cast(source, to: Set<${Key0}>.self))
   else { return }
   
@@ -108,8 +109,9 @@ tests.test(
     ${DynamicKey}(17) as ${Key0} : ${DynamicValue}(17) as ${Value0}]
 
 
-  // FIXME: The type-checker won't accept a direct cast when Value1 is Any
-%   if Value1 == 'Any':
+  // FIXME: The type-checker won't accept a direct cast in these two cases
+%   if '[%s:%s]=>[%s:%s]' % (Key0,Value0,Key1,Value1) in (
+%     '[Derived:Any]=>[Base:Any]', '[Int:AnyFoo]=>[Int:Any]'):
   // let upcasted_ = source as Any as? [${Key1}:${Value1}]
   let upcasted_ = cast(source, to: [${Key1}:${Value1}].self)
 
